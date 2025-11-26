@@ -1,5 +1,5 @@
 // 数据库连接配置
-import tcb from 'tcb-admin-node';
+import tcb from '@cloudbase/node-sdk';
 
 let app: any = null;
 
