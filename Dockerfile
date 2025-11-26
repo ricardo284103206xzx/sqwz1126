@@ -33,9 +33,12 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # 复制构建产物
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# 复制 standalone 构建输出
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+# 复制静态资源
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# 复制 public 目录（如果存在）
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
