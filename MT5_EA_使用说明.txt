@@ -1,0 +1,180 @@
+========================================
+MT5 EA授权验证代码使用说明
+========================================
+
+一、文件说明
+-----------
+MT5_EA_Authorization.mq5 - 这是一个完整的EA授权验证示例代码
+
+
+二、如何在你的EA中集成授权验证
+-----------------------------
+
+方法1：直接使用示例EA
+1. 打开 MT5_EA_Authorization.mq5
+2. 修改 AuthServerURL 为你的实际授权服务器地址
+3. 在 OnTick() 函数中添加你的交易逻辑
+4. 编译并使用
+
+
+方法2：将授权代码集成到现有EA
+1. 复制以下部分到你的EA代码中：
+   - 输入参数部分（AuthServerURL, OfflineHours）
+   - 全局变量部分（g_lastVerifyTime, g_isAuthorized, g_mt5Account）
+   - 所有函数：
+     * VerifyAuthorizationOnline()
+     * CheckOfflineAuthorization()
+     * GetOfflineRemainingHours()
+     * SaveVerificationTime()
+
+2. 在你的 OnInit() 函数开头添加授权验证：
+
+   //--- 获取MT5账号
+   g_mt5Account = IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+   
+   //--- 尝试在线验证授权
+   if(VerifyAuthorizationOnline())
+   {
+      g_isAuthorized = true;
+      g_lastVerifyTime = TimeCurrent();
+      Print("✓ 授权验证成功");
+      // 继续你的初始化代码...
+   }
+   else if(CheckOfflineAuthorization())
+   {
+      g_isAuthorized = true;
+      Print("✓ 离线授权有效");
+      // 继续你的初始化代码...
+   }
+   else
+   {
+      Alert("授权验证失败！EA将停止运行。");
+      return(INIT_FAILED);
+   }
+
+3. 在你的 OnTick() 函数开头添加授权检查：
+
+   if(!g_isAuthorized)
+   {
+      ExpertRemove();
+      return;
+   }
+
+
+三、重要配置步骤
+--------------
+
+1. 修改授权服务器地址
+   在EA代码中修改：
+   input string AuthServerURL = "https://你的域名.com/api/verify";
+
+2. 在MT5中允许WebRequest访问
+   这一步非常重要！否则EA无法连接服务器。
+   
+   步骤：
+   a) 打开MT5
+   b) 菜单：工具 -> 选项
+   c) 选择"EA交易"标签
+   d) 勾选"允许WebRequest访问以下URL"
+   e) 点击"添加"，输入你的授权服务器地址：
+      https://你的域名.com
+   f) 点击"确定"保存
+   g) 重启MT5或重新加载EA
+
+3. 编译EA
+   - 在MetaEditor中打开EA文件
+   - 点击"编译"按钮（或按F7）
+   - 确保没有错误
+
+
+四、授权验证机制说明
+------------------
+
+1. 启动验证
+   - EA启动时首先尝试在线验证
+   - 如果在线验证成功，保存验证时间
+   - 如果在线验证失败（如网络断开），检查离线授权
+
+2. 离线运行
+   - 默认允许离线运行24小时
+   - 可以通过修改 OfflineHours 参数调整
+   - 离线时间基于上次成功验证的时间计算
+
+3. 授权失败处理
+   - 如果授权验证失败，EA将拒绝启动
+   - 显示错误提示信息
+   - 用户需要联系管理员添加授权
+
+
+五、测试步骤
+-----------
+
+1. 未授权测试
+   - 使用一个未授权的MT5账号
+   - 启动EA
+   - 应该看到"授权验证失败"提示
+
+2. 授权成功测试
+   - 在授权网站添加MT5账号授权
+   - 启动EA
+   - 应该看到"授权验证成功"提示
+
+3. 离线测试
+   - 授权成功后，断开网络
+   - 重启EA
+   - 应该看到"离线授权有效"提示
+   - 24小时后再次测试，应该会失败
+
+
+六、常见问题
+-----------
+
+Q1: EA提示"URL未被允许访问"
+A1: 需要在MT5中添加授权服务器URL到允许列表（见第三部分第2点）
+
+Q2: EA无法连接服务器
+A2: 检查：
+    - 网络连接是否正常
+    - 授权服务器地址是否正确
+    - MT5是否允许WebRequest访问
+    - 防火墙是否阻止了MT5的网络访问
+
+Q3: 离线授权不工作
+A3: 确保：
+    - 至少成功在线验证过一次
+    - 全局变量已保存（GlobalVariableSet）
+    - 离线时间未超过设置的小时数
+
+Q4: 如何修改离线运行时长
+A4: 修改EA输入参数：
+    input int OfflineHours = 24;  // 改为你想要的小时数
+
+Q5: 如何在策略测试器中使用
+A5: 策略测试器中无法使用WebRequest，建议：
+    - 添加一个测试模式参数
+    - 在测试模式下跳过授权验证
+
+
+七、安全建议
+-----------
+
+1. 使用HTTPS
+   确保授权服务器使用HTTPS，保护通信安全
+
+2. 代码混淆
+   可以使用MQL5的代码混淆工具保护EA代码
+
+3. 定期验证
+   可以添加定时器，定期在线验证授权状态
+
+4. 日志记录
+   保留验证日志，便于追踪问题
+
+
+八、技术支持
+-----------
+
+如有问题，请联系技术支持。
+
+========================================
+
