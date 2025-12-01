@@ -7,35 +7,8 @@ import { kv } from '@vercel/kv';
 
 export async function POST(request: NextRequest) {
   try {
-    // 检查是否已有管理员
-    const existingKeys = await kv.keys(`${KEYS.ADMINS}*`);
-
-    if (existingKeys && existingKeys.length > 0) {
-      return NextResponse.json(
-        apiResponse(false, null, '系统已初始化，请勿重复操作'),
-        { status: 400 }
-      );
-    }
-
-    // 从环境变量或请求体获取默认管理员信息
-    const body = await request.json().catch(() => ({}));
-    const username = body.username || process.env.DEFAULT_ADMIN_USERNAME || 'admin';
-    const password = body.password || process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456';
-
-    // 创建默认管理员
-    const passwordHash = await hashPassword(password);
-    
-    await adminDB.create({
-      username: username,
-      password_hash: passwordHash,
-      role: 'super_admin',
-      created_at: new Date().toISOString(),
-      last_login_at: null,
-    });
-
-    return NextResponse.json(
-      apiResponse(true, { username }, '初始化成功，请使用默认账号登录')
-    );
+    // POST 方式显式初始化（主要给程序/脚本调用）
+    return await doInit(request);
   } catch (error: any) {
     console.error('初始化错误:', error);
     return NextResponse.json(
@@ -51,6 +24,12 @@ export async function GET(request: NextRequest) {
     const existingKeys = await kv.keys(`${KEYS.ADMINS}*`);
     const initialized = existingKeys && existingKeys.length > 0;
 
+    // 如果还未初始化，则自动创建默认管理员（方便用户直接在浏览器访问一次完成初始化）
+    if (!initialized) {
+      const initResult = await doInit(request, true);
+      return initResult;
+    }
+
     return NextResponse.json(
       apiResponse(true, { initialized }, initialized ? '系统已初始化' : '系统未初始化')
     );
@@ -61,5 +40,38 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// 实际的初始化逻辑，POST / GET 共用
+async function doInit(request: NextRequest, fromGet: boolean = false) {
+  // 再次检查是否已有管理员，避免并发创建
+  const existingKeys = await kv.keys(`${KEYS.ADMINS}*`);
+
+  if (existingKeys && existingKeys.length > 0) {
+    return NextResponse.json(
+      apiResponse(false, null, '系统已初始化，请勿重复操作'),
+      { status: fromGet ? 200 : 400 }
+    );
+  }
+
+  // 从环境变量或请求体获取默认管理员信息
+  const body = await request.json().catch(() => ({}));
+  const username = body.username || process.env.DEFAULT_ADMIN_USERNAME || 'admin';
+  const password = body.password || process.env.DEFAULT_ADMIN_PASSWORD || 'admin123456';
+
+  // 创建默认管理员
+  const passwordHash = await hashPassword(password);
+  
+  await adminDB.create({
+    username: username,
+    password_hash: passwordHash,
+    role: 'super_admin',
+    created_at: new Date().toISOString(),
+    last_login_at: null,
+  });
+
+  return NextResponse.json(
+    apiResponse(true, { username }, '初始化成功，请使用默认账号登录')
+  );
 }
 
