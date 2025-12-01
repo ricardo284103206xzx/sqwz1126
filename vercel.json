@@ -4,15 +4,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["hkg1"],
-  "env": {
-    "JWT_SECRET": "@jwt_secret",
-    "TCB_ENV_ID": "@tcb_env_id",
-    "TCB_SECRET_ID": "@tcb_secret_id",
-    "TCB_SECRET_KEY": "@tcb_secret_key",
-    "DEFAULT_ADMIN_USERNAME": "@default_admin_username",
-    "DEFAULT_ADMIN_PASSWORD": "@default_admin_password"
-  }
+  "regions": ["hkg1"]
 }
 
 
