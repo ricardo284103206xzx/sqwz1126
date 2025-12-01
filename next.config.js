@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   // 支持部署到子目录
   basePath: '',
-  // 启用 standalone 输出模式（Docker 部署需要）
-  output: 'standalone',
+  // Vercel 部署不需要 standalone 模式
+  // output: 'standalone',
   // API路由配置
   async headers() {
     return [

@@ -4,12 +4,12 @@
 //|                                                                  |
 //+------------------------------------------------------------------+
 #property copyright "MT5 EA Authorization System"
-#property link      "https://your-domain.com"
+#property link      "https://mt5-auth-system5-202854-6-1386563557.sh.run.tcloudbase.com"
 #property version   "1.00"
 #property strict
 
 //--- 输入参数
-input string AuthServerURL = "https://your-domain.com/api/verify";  // 授权服务器地址
+input string AuthServerURL = "https://mt5-auth-system5-202854-6-1386563557.sh.run.tcloudbase.com/api/verify";  // 授权服务器地址
 input int    OfflineHours = 24;                                      // 离线可运行小时数
 
 //--- 全局变量
