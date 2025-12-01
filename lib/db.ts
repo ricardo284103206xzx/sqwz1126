@@ -37,7 +37,7 @@ export const authDB = {
     const ids = await kv.smembers(KEYS.AUTH_LIST);
     if (!ids || ids.length === 0) return [];
     const auths = await Promise.all(
-      ids.map(id => kv.get(`${KEYS.AUTHORIZATIONS}${id}`))
+      ids.map((id: string) => kv.get(`${KEYS.AUTHORIZATIONS}${id}`))
     );
     return auths.filter(Boolean) as Authorization[];
   },
@@ -109,7 +109,7 @@ export const logDB = {
     const ids = await kv.smembers(KEYS.LOG_LIST);
     if (!ids || ids.length === 0) return [];
     const logs = await Promise.all(
-      ids.map(id => kv.get(`${KEYS.VERIFICATION_LOGS}${id}`))
+      ids.map((id: string) => kv.get(`${KEYS.VERIFICATION_LOGS}${id}`))
     );
     return logs.filter(Boolean) as VerificationLog[];
   }

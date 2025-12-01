@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       expires_at: expiresAt,
       is_permanent: isPermanent,
       duration_days: duration_days,
-      status: 'active',
+      status: 'active' as const,
       notes: notes || '',
       created_by: admin.username,
       last_verified_at: null,

@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     if (expired) {
       // 更新状态为过期
       await authDB.update(auth._id, {
-        status: 'expired',
+        status: 'expired' as const,
         updated_at: new Date().toISOString(),
       });
       

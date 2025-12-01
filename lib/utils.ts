@@ -12,26 +12,26 @@ export function apiResponse(success: boolean, data: any = null, message: string 
 }
 
 // 计算过期时间
-export function calculateExpiryDate(days: number): Date | null {
+export function calculateExpiryDate(days: number): string | null {
   if (days === -1) return null; // 永久授权
-  return dayjs().add(days, 'day').toDate();
+  return dayjs().add(days, 'day').toISOString();
 }
 
 // 检查是否过期
-export function isExpired(expiresAt: Date | null): boolean {
+export function isExpired(expiresAt: string | null): boolean {
   if (!expiresAt) return false; // 永久授权不过期
   return dayjs(expiresAt).isBefore(dayjs());
 }
 
 // 计算剩余天数
-export function getRemainingDays(expiresAt: Date | null): number {
+export function getRemainingDays(expiresAt: string | null): number {
   if (!expiresAt) return -1; // 永久授权返回-1
   const days = dayjs(expiresAt).diff(dayjs(), 'day');
   return days > 0 ? days : 0;
 }
 
 // 格式化日期
-export function formatDate(date: Date | null): string {
+export function formatDate(date: string | null): string {
   if (!date) return '永久';
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss');
 }

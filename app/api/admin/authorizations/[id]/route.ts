@@ -31,7 +31,7 @@ export async function PUT(
       expires_at: expiresAt,
       is_permanent: isPermanent,
       duration_days: duration_days,
-      status: 'active',
+      status: 'active' as const,
       updated_at: new Date().toISOString(),
     };
 
@@ -77,7 +77,7 @@ export async function DELETE(
     if (action === 'cancel') {
       // 取消授权（软删除）
       await authDB.update(id, {
-        status: 'cancelled',
+        status: 'cancelled' as const,
         updated_at: new Date().toISOString(),
       });
       return NextResponse.json(
