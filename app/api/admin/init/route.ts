@@ -1,18 +1,16 @@
 // 初始化接口 - 创建默认管理员
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, COLLECTIONS } from '@/lib/db';
+import { adminDB, KEYS } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { apiResponse } from '@/lib/utils';
+import { kv } from '@vercel/kv';
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDB();
-    const adminsCollection = db.collection(COLLECTIONS.ADMINS);
-
     // 检查是否已有管理员
-    const { data: existingAdmins } = await adminsCollection.limit(1).get();
+    const existingKeys = await kv.keys(`${KEYS.ADMINS}*`);
 
-    if (existingAdmins && existingAdmins.length > 0) {
+    if (existingKeys && existingKeys.length > 0) {
       return NextResponse.json(
         apiResponse(false, null, '系统已初始化，请勿重复操作'),
         { status: 400 }
@@ -27,11 +25,11 @@ export async function POST(request: NextRequest) {
     // 创建默认管理员
     const passwordHash = await hashPassword(password);
     
-    await adminsCollection.add({
+    await adminDB.create({
       username: username,
       password_hash: passwordHash,
       role: 'super_admin',
-      created_at: new Date(),
+      created_at: new Date().toISOString(),
       last_login_at: null,
     });
 
@@ -50,11 +48,8 @@ export async function POST(request: NextRequest) {
 // 支持GET请求查看初始化状态
 export async function GET(request: NextRequest) {
   try {
-    const db = getDB();
-    const adminsCollection = db.collection(COLLECTIONS.ADMINS);
-
-    const { data: existingAdmins } = await adminsCollection.limit(1).get();
-    const initialized = existingAdmins && existingAdmins.length > 0;
+    const existingKeys = await kv.keys(`${KEYS.ADMINS}*`);
+    const initialized = existingKeys && existingKeys.length > 0;
 
     return NextResponse.json(
       apiResponse(true, { initialized }, initialized ? '系统已初始化' : '系统未初始化')

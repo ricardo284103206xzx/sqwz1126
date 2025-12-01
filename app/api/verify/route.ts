@@ -1,6 +1,6 @@
 // EA验证接口（公开接口）
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, COLLECTIONS } from '@/lib/db';
+import { authDB, logDB } from '@/lib/db';
 import { apiResponse, isExpired, getRemainingDays } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
@@ -15,16 +15,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDB();
-    const collection = db.collection(COLLECTIONS.AUTHORIZATIONS);
-
     // 查询授权记录
-    const { data: authorizations } = await collection
-      .where({ mt5_account: account.toString() })
-      .limit(1)
-      .get();
+    const auth = await authDB.getByAccount(account.toString());
 
-    if (!authorizations || authorizations.length === 0) {
+    if (!auth) {
       // 记录验证失败日志
       await logVerification(account, false, '账号未授权', request);
       
@@ -35,8 +29,6 @@ export async function GET(request: NextRequest) {
         }, '账号未授权')
       );
     }
-
-    const auth = authorizations[0];
 
     // 检查授权状态
     if (auth.status === 'cancelled') {
@@ -54,9 +46,9 @@ export async function GET(request: NextRequest) {
     const expired = isExpired(auth.expires_at);
     if (expired) {
       // 更新状态为过期
-      await collection.doc(auth._id).update({
+      await authDB.update(auth._id, {
         status: 'expired',
-        updated_at: new Date(),
+        updated_at: new Date().toISOString(),
       });
       
       await logVerification(account, false, '授权已过期', request);
@@ -71,8 +63,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 授权有效，更新验证信息
-    await collection.doc(auth._id).update({
-      last_verified_at: new Date(),
+    await authDB.update(auth._id, {
+      last_verified_at: new Date().toISOString(),
       verify_count: (auth.verify_count || 0) + 1,
     });
 
@@ -111,19 +103,15 @@ async function logVerification(
   request: NextRequest
 ) {
   try {
-    const db = getDB();
-    const logsCollection = db.collection(COLLECTIONS.VERIFICATION_LOGS);
-
     // 获取IP地址
     const forwarded = request.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
 
-    await logsCollection.add({
+    await logDB.create({
       mt5_account: account,
       result: success ? 'success' : 'failed',
       message: message,
       ip_address: ip,
-      created_at: new Date(),
     });
   } catch (error) {
     console.error('记录验证日志错误:', error);

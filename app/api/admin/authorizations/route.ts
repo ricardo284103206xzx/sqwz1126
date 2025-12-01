@@ -1,6 +1,6 @@
 // 授权管理接口 - 列表和添加
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, COLLECTIONS } from '@/lib/db';
+import { authDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { apiResponse, calculateExpiryDate, isExpired, getRemainingDays } from '@/lib/utils';
 
@@ -16,30 +16,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getDB();
-    const collection = db.collection(COLLECTIONS.AUTHORIZATIONS);
-
     // 获取查询参数
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search');
 
-    // 构建查询条件
-    let query: any = {};
-    
+    // 查询授权列表
+    let authorizations = await authDB.getAll();
+
+    // 过滤状态
     if (status && status !== 'all') {
-      query.status = status;
-    }
-    
-    if (search) {
-      query.mt5_account = new RegExp(search);
+      authorizations = authorizations.filter((auth: any) => auth.status === status);
     }
 
-    // 查询授权列表
-    const { data: authorizations } = await collection
-      .where(query)
-      .orderBy('created_at', 'desc')
-      .get();
+    // 搜索账号
+    if (search) {
+      authorizations = authorizations.filter((auth: any) => 
+        auth.mt5_account && auth.mt5_account.includes(search)
+      );
+    }
 
     // 处理数据，添加计算字段
     const processedData = authorizations.map((auth: any) => {
@@ -52,6 +47,11 @@ export async function GET(request: NextRequest) {
         remaining_days: remainingDays,
         status: expired && auth.status === 'active' ? 'expired' : auth.status,
       };
+    });
+
+    // 按创建时间倒序排序
+    processedData.sort((a: any, b: any) => {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
     return NextResponse.json(
@@ -95,16 +95,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDB();
-    const collection = db.collection(COLLECTIONS.AUTHORIZATIONS);
-
     // 检查账号是否已存在
-    const { data: existing } = await collection
-      .where({ mt5_account })
-      .limit(1)
-      .get();
+    const existing = await authDB.getByAccount(mt5_account);
 
-    if (existing && existing.length > 0) {
+    if (existing) {
       return NextResponse.json(
         apiResponse(false, null, '该MT5账号已存在授权记录'),
         { status: 400 }
@@ -114,7 +108,7 @@ export async function POST(request: NextRequest) {
     // 计算过期时间
     const isPermanent = duration_days === -1;
     const expiresAt = calculateExpiryDate(duration_days);
-    const now = new Date();
+    const now = new Date().toISOString();
 
     // 创建授权记录
     const authData = {
@@ -130,12 +124,13 @@ export async function POST(request: NextRequest) {
       verify_count: 0,
       created_at: now,
       updated_at: now,
+      account: mt5_account.toString(),
     };
 
-    const result = await collection.add(authData);
+    const result = await authDB.create(authData);
 
     return NextResponse.json(
-      apiResponse(true, { id: result.id, ...authData }, '授权添加成功')
+      apiResponse(true, result, '授权添加成功')
     );
   } catch (error: any) {
     console.error('添加授权错误:', error);

@@ -1,8 +1,9 @@
 // 管理员登录接口
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, COLLECTIONS } from '@/lib/db';
+import { adminDB } from '@/lib/db';
 import { comparePassword, generateToken } from '@/lib/auth';
 import { apiResponse } from '@/lib/utils';
+import { kv } from '@vercel/kv';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,26 +16,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDB();
-    const adminsCollection = db.collection(COLLECTIONS.ADMINS);
-
     // 查询管理员
-    const { data: admins } = await adminsCollection
-      .where({ username })
-      .limit(1)
-      .get();
+    const admin = await adminDB.getByUsername(username);
 
-    if (!admins || admins.length === 0) {
+    if (!admin) {
       return NextResponse.json(
         apiResponse(false, null, '用户名或密码错误'),
         { status: 401 }
       );
     }
 
-    const admin = admins[0];
-
     // 验证密码
-    const isPasswordValid = await comparePassword(password, admin.password_hash);
+    const isPasswordValid = await comparePassword(password, (admin as any).password_hash);
     if (!isPasswordValid) {
       return NextResponse.json(
         apiResponse(false, null, '用户名或密码错误'),
@@ -43,22 +36,23 @@ export async function POST(request: NextRequest) {
     }
 
     // 更新最后登录时间
-    await adminsCollection.doc(admin._id).update({
-      last_login_at: new Date(),
+    await kv.set(`admin:${(admin as any)._id}`, {
+      ...admin,
+      last_login_at: new Date().toISOString(),
     });
 
     // 生成Token
     const token = generateToken({
-      id: admin._id,
-      username: admin.username,
-      role: admin.role,
+      id: (admin as any)._id,
+      username: (admin as any).username,
+      role: (admin as any).role,
     });
 
     return NextResponse.json(
       apiResponse(true, {
         token,
-        username: admin.username,
-        role: admin.role,
+        username: (admin as any).username,
+        role: (admin as any).role,
       }, '登录成功')
     );
   } catch (error: any) {

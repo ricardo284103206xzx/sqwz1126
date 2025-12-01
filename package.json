@@ -19,7 +19,7 @@
     "bcryptjs": "2.4.3",
     "jsonwebtoken": "9.0.2",
     "dayjs": "1.11.10",
-    "@cloudbase/node-sdk": "^2.4.0"
+    "@vercel/kv": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "20.10.5",

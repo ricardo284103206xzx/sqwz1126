@@ -1,6 +1,6 @@
 // 授权管理接口 - 更新和删除
 import { NextRequest, NextResponse } from 'next/server';
-import { getDB, COLLECTIONS } from '@/lib/db';
+import { authDB } from '@/lib/db';
 import { authenticateRequest } from '@/lib/auth';
 import { apiResponse, calculateExpiryDate } from '@/lib/utils';
 
@@ -22,9 +22,6 @@ export async function PUT(
     const { id } = params;
     const { duration_days, notes } = await request.json();
 
-    const db = getDB();
-    const collection = db.collection(COLLECTIONS.AUTHORIZATIONS);
-
     // 计算新的过期时间
     const isPermanent = duration_days === -1;
     const expiresAt = calculateExpiryDate(duration_days);
@@ -35,17 +32,17 @@ export async function PUT(
       is_permanent: isPermanent,
       duration_days: duration_days,
       status: 'active',
-      updated_at: new Date(),
+      updated_at: new Date().toISOString(),
     };
 
     if (notes !== undefined) {
       updateData.notes = notes;
     }
 
-    await collection.doc(id).update(updateData);
+    const result = await authDB.update(id, updateData);
 
     return NextResponse.json(
-      apiResponse(true, { id, ...updateData }, '授权更新成功')
+      apiResponse(true, result, '授权更新成功')
     );
   } catch (error: any) {
     console.error('更新授权错误:', error);
@@ -72,8 +69,6 @@ export async function DELETE(
     }
 
     const { id } = params;
-    const db = getDB();
-    const collection = db.collection(COLLECTIONS.AUTHORIZATIONS);
 
     // 获取查询参数，判断是取消还是删除
     const { searchParams } = new URL(request.url);
@@ -81,16 +76,16 @@ export async function DELETE(
 
     if (action === 'cancel') {
       // 取消授权（软删除）
-      await collection.doc(id).update({
+      await authDB.update(id, {
         status: 'cancelled',
-        updated_at: new Date(),
+        updated_at: new Date().toISOString(),
       });
       return NextResponse.json(
         apiResponse(true, null, '授权已取消')
       );
     } else {
       // 永久删除
-      await collection.doc(id).remove();
+      await authDB.delete(id);
       return NextResponse.json(
         apiResponse(true, null, '授权已删除')
       );
