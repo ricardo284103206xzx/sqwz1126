@@ -18,7 +18,7 @@
     "bcryptjs": "2.4.3",
     "jsonwebtoken": "9.0.2",
     "dayjs": "1.11.10",
-    "tcb-admin-node": "2.3.1"
+    "@vercel/kv": "^1.0.1"
   },
   "devDependencies": {
     "@types/node": "20.10.5",
@@ -28,4 +28,3 @@
     "typescript": "5.3.3"
   }
 }
-
