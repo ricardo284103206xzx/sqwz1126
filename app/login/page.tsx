@@ -19,12 +19,12 @@ export default function LoginPage() {
         localStorage.setItem('token', response.data.data.token);
         localStorage.setItem('username', response.data.data.username);
         message.success('登录成功');
-        router.push('/dashboard');
+        router.push('/admin');
       } else {
         message.error(response.data.message || '登录失败');
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || '登录失败，请检查网络连接');
+      message.error(error.response?.data?.message || '登录失败，请检查网络连�?);
     } finally {
       setLoading(false);
     }
@@ -46,13 +46,13 @@ export default function LoginPage() {
           >
             <Input 
               prefix={<UserOutlined />} 
-              placeholder="用户名" 
+              placeholder="用户�? 
             />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
+            rules={[{ required: true, message: '请输入密�? }]}
           >
             <Input.Password
               prefix={<LockOutlined />}
