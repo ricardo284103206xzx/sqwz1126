@@ -29,11 +29,14 @@ export async function GET(request: NextRequest) {
       authorizations = authorizations.filter((auth: any) => auth.status === status);
     }
 
-    // 搜索账号
+    // 搜索账号（支持同时搜索 mt5_account 和 account 字段）
     if (search) {
-      authorizations = authorizations.filter((auth: any) => 
-        auth.mt5_account && auth.mt5_account.includes(search)
-      );
+      const searchLower = search.toLowerCase();
+      authorizations = authorizations.filter((auth: any) => {
+        const mt5Account = (auth.mt5_account || '').toString().toLowerCase();
+        const account = (auth.account || '').toString().toLowerCase();
+        return mt5Account.includes(searchLower) || account.includes(searchLower);
+      });
     }
 
     // 处理数据，添加计算字段

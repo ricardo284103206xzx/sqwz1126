@@ -67,7 +67,7 @@ export const authDB = {
     await kv.del(`${KEYS.AUTHORIZATIONS}${id}`);
     await kv.srem(KEYS.AUTH_LIST, id);
     return true;
-  }
+}
 };
 
 // 管理员数据操作

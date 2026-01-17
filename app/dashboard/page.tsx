@@ -18,12 +18,15 @@ import {
   Row,
   Col,
 } from 'antd';
+
+const { Search } = Input;
 import {
   PlusOutlined,
   LogoutOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   ExclamationCircleOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
@@ -50,6 +53,7 @@ export default function DashboardPage() {
   const [form] = Form.useForm();
   const [username, setUsername] = useState('');
   const [durationType, setDurationType] = useState<'days' | 'permanent'>('days');
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   useEffect(() => {
     // 检查登录状态
@@ -74,10 +78,14 @@ export default function DashboardPage() {
   };
 
   // 获取授权列表
-  const fetchAuthorizations = async () => {
+  const fetchAuthorizations = async (search?: string) => {
     setLoading(true);
     try {
-      const response = await axios.get('/api/admin/authorizations', getAxiosConfig());
+      const params = search ? { search } : {};
+      const response = await axios.get('/api/admin/authorizations', {
+        ...getAxiosConfig(),
+        params,
+      });
       if (response.data.success) {
         setAuthorizations(response.data.data);
       }
@@ -92,6 +100,22 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 搜索账号
+  const handleSearch = (value: string) => {
+    setSearchKeyword(value);
+    if (value.trim()) {
+      fetchAuthorizations(value.trim());
+    } else {
+      fetchAuthorizations();
+    }
+  };
+
+  // 清除搜索
+  const handleClearSearch = () => {
+    setSearchKeyword('');
+    fetchAuthorizations();
   };
 
   // 添加授权
@@ -381,13 +405,30 @@ export default function DashboardPage() {
         <Card
           title="授权列表"
           extra={
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsModalVisible(true)}
-            >
-              添加授权
-            </Button>
+            <Space>
+              <Search
+                placeholder="输入MT5账号搜索"
+                allowClear
+                style={{ width: 300 }}
+                value={searchKeyword}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSearchKeyword(value);
+                  if (!value.trim()) {
+                    handleClearSearch();
+                  }
+                }}
+                onSearch={handleSearch}
+                enterButton={<SearchOutlined />}
+              />
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setIsModalVisible(true)}
+              >
+                添加授权
+              </Button>
+            </Space>
           }
         >
           <Table
